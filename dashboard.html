@@ -320,7 +320,7 @@
     <div class="stats">
       <div class="stat-card">
         <div class="stat-label">Assignments Due</div>
-        <div class="stat-num" style="color:var(--amber)">3</div>
+        <div class="stat-num" id="statDue" style="color:var(--amber)">3</div>
         <div class="stat-sub">This week</div>
       </div>
       <div class="stat-card">
@@ -344,48 +344,15 @@
     <div class="grid">
 
       <!-- TASKS -->
-      <div class="panel">
-        <div class="panel-title">
-          This Week's Tasks
-          <span>+ Add task</span>
-        </div>
+     <div class="panel-title">
+  This Week's Tasks
+  <span onclick="openTaskForm()" style="cursor:pointer">+ Add task</span>
+</div>
 
-        <div class="task">
-          <div class="task-dot" style="background:var(--red)"></div>
-          <div class="task-info">
-            <div class="task-name">Accounting Essay Draft</div>
-            <div class="task-sub">ACC101 · 2,000 words</div>
-          </div>
-          <span class="task-badge badge-red">Due Fri</span>
-        </div>
+<div id="taskList"></div>
 
-        <div class="task">
-          <div class="task-dot" style="background:var(--amber)"></div>
-          <div class="task-info">
-            <div class="task-name">History Quiz Revision</div>
-            <div class="task-sub">HIST201 · 3 chapters</div>
-          </div>
-          <span class="task-badge badge-amber">Due Thu</span>
-        </div>
 
-        <div class="task">
-          <div class="task-dot" style="background:var(--teal)"></div>
-          <div class="task-info">
-            <div class="task-name">Research Methods Reading</div>
-            <div class="task-sub">RES101 · Week 8 notes</div>
-          </div>
-          <span class="task-badge badge-teal">Tonight</span>
-        </div>
-
-        <div class="task">
-          <div class="task-dot" style="background:var(--green)"></div>
-          <div class="task-info">
-            <div class="task-name">IT Project Proposal</div>
-            <div class="task-sub">ITC204 · Group work</div>
-          </div>
-          <span class="task-badge badge-green">Done ✓</span>
-        </div>
-      </div>
+      
 
       <!-- SCHEDULE -->
       <div class="panel">
@@ -454,38 +421,151 @@
     </div>
   </main>
 
-  <script>
-    function sendMessage() {
-      const input = document.getElementById('chatInput');
-      const msg = input.value.trim();
-      if (!msg) return;
+<!-- TASK MODAL -->
+<div id="taskModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:999; justify-content:center; align-items:center;">
+  <div style="background:#0D1B2A; border:1px solid rgba(6,182,212,0.25); border-radius:20px; padding:40px; width:420px;">
+    <h2 style="font-size:20px; margin-bottom:6px;">Add New Task</h2>
+    <p style="font-size:13px; color:#94A3B8; margin-bottom:24px;">It'll be saved automatically.</p>
 
-      const panel = document.querySelector('.ai-panel');
-      const aiInput = document.querySelector('.ai-input');
+    <label style="font-size:12px; color:#94A3B8; display:block; margin-bottom:6px;">Task name *</label>
+    <input id="taskName" type="text" placeholder="e.g. Biology essay" style="width:100%; padding:12px; border-radius:9px; border:1px solid rgba(6,182,212,0.2); background:#06111F; color:white; font-size:14px; margin-bottom:14px;">
 
-      const bubble = document.createElement('div');
-      bubble.className = 'ai-bubble';
-      bubble.innerHTML = `
-        <div class="ai-tag" style="color:var(--gray)">You</div>
-        ${msg}
+    <label style="font-size:12px; color:#94A3B8; display:block; margin-bottom:6px;">Subject</label>
+    <input id="taskSub" type="text" placeholder="e.g. BIO101 · 1,500 words" style="width:100%; padding:12px; border-radius:9px; border:1px solid rgba(6,182,212,0.2); background:#06111F; color:white; font-size:14px; margin-bottom:14px;">
+
+    <label style="font-size:12px; color:#94A3B8; display:block; margin-bottom:6px;">Due date</label>
+    <input id="taskDue" type="text" placeholder="e.g. Due Friday" style="width:100%; padding:12px; border-radius:9px; border:1px solid rgba(6,182,212,0.2); background:#06111F; color:white; font-size:14px; margin-bottom:24px;">
+
+    <div style="display:flex; gap:10px;">
+      <button onclick="addTask()" style="flex:1; padding:13px; background:#06B6D4; color:white; border:none; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer;">Add Task</button>
+      <button onclick="closeTaskForm()" style="flex:1; padding:13px; background:transparent; color:#94A3B8; border:1px solid rgba(255,255,255,0.1); border-radius:9px; font-size:14px; cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+  
+    <script>
+  // ── TASK DATA ──────────────────────────────────────────
+  let tasks = JSON.parse(localStorage.getItem('tasks')) || [
+    { name:"Accounting Essay Draft",    sub:"ACC101 · 2,000 words",  due:"Due Fri",  color:"red",   done:false },
+    { name:"History Quiz Revision",     sub:"HIST201 · 3 chapters",  due:"Due Thu",  color:"amber", done:false },
+    { name:"Research Methods Reading",  sub:"RES101 · Week 8 notes", due:"Tonight",  color:"teal",  done:false },
+    { name:"IT Project Proposal",       sub:"ITC204 · Group work",   due:"Done ✓",  color:"green", done:true  },
+  ];
+
+  const dotColors = {
+    red:"var(--red)", amber:"var(--amber)",
+    teal:"var(--teal)", green:"var(--green)", indigo:"var(--indigo)"
+  };
+
+  const badgeClass = {
+    red:"badge-red", amber:"badge-amber",
+    teal:"badge-teal", green:"badge-green", indigo:"badge-teal"
+  };
+
+  // ── RENDER TASKS ───────────────────────────────────────
+  function renderTasks() {
+    const list = document.getElementById('taskList');
+    list.innerHTML = '';
+    tasks.forEach((t, i) => {
+      list.innerHTML += `
+        <div class="task" id="task-${i}">
+          <div class="task-dot" style="background:${dotColors[t.color]}"></div>
+          <div class="task-info">
+            <div class="task-name" style="${t.done ? 'text-decoration:line-through;opacity:0.5' : ''}">${t.name}</div>
+            <div class="task-sub">${t.sub}</div>
+          </div>
+          <span class="task-badge ${badgeClass[t.color]}">${t.due}</span>
+          <span onclick="deleteTask(${i})" style="margin-left:10px;cursor:pointer;color:var(--gray);font-size:16px">×</span>
+        </div>
       `;
-      panel.insertBefore(bubble, aiInput);
-      input.value = '';
-
-      setTimeout(() => {
-        const reply = document.createElement('div');
-        reply.className = 'ai-bubble';
-        reply.innerHTML = `
-          <div class="ai-tag">⚡ StudyAI</div>
-          Got it. I'll factor that into your plan. Keep going — you're doing better than you think.
-        `;
-        panel.insertBefore(reply, aiInput);
-      }, 900);
-    }
-
-    document.getElementById('chatInput').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') sendMessage();
     });
+    saveTasks();
+    updateStats();
+  }
+
+  // ── ADD TASK FORM ──────────────────────────────────────
+  function openTaskForm() {
+    document.getElementById('taskModal').style.display = 'flex';
+    document.getElementById('taskName').focus();
+  }
+
+  function closeTaskForm() {
+    document.getElementById('taskModal').style.display = 'none';
+    document.getElementById('taskName').value = '';
+    document.getElementById('taskSub').value = '';
+    document.getElementById('taskDue').value = '';
+  }
+
+  function addTask() {
+    const name = document.getElementById('taskName').value.trim();
+    const sub  = document.getElementById('taskSub').value.trim();
+    const due  = document.getElementById('taskDue').value.trim();
+    if (!name) { alert('Please enter a task name.'); return; }
+    tasks.unshift({
+      name, sub: sub || 'No subject', due: due || 'No due date',
+      color: 'teal', done: false
+    });
+    renderTasks();
+    closeTaskForm();
+  }
+
+  // ── DELETE TASK ────────────────────────────────────────
+  function deleteTask(i) {
+    tasks.splice(i, 1);
+    renderTasks();
+  }
+
+  // ── SAVE TO LOCALSTORAGE ───────────────────────────────
+  function saveTasks() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
+
+  // ── UPDATE STATS ───────────────────────────────────────
+  function updateStats() {
+    const due = tasks.filter(t => !t.done).length;
+    document.getElementById('statDue').textContent = due;
+  }
+
+  // ── AI CHAT ───────────────────────────────────────────
+  const replies = [
+    "Got it. I'll factor that into your plan. Keep going — you're doing better than you think.",
+    "Good question. Based on your schedule, best time to tackle that is tomorrow morning.",
+    "I've noted that. Your essay draft should be your priority tonight — 6 to 8pm is blocked.",
+    "You've got this. Break it into 25-minute sessions with 5-minute breaks. Want me to set that up?",
+    "That's a smart move. Consistency beats intensity every time.",
+  ];
+  let replyIndex = 0;
+
+  function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    const panel = document.querySelector('.ai-panel');
+    const aiInput = document.querySelector('.ai-input');
+    const bubble = document.createElement('div');
+    bubble.className = 'ai-bubble';
+    bubble.innerHTML = `<div class="ai-tag" style="color:var(--gray)">You</div>${msg}`;
+    panel.insertBefore(bubble, aiInput);
+    input.value = '';
+    setTimeout(() => {
+      const reply = document.createElement('div');
+      reply.className = 'ai-bubble';
+      reply.innerHTML = `<div class="ai-tag">⚡ StudyAI</div>${replies[replyIndex % replies.length]}`;
+      panel.insertBefore(reply, aiInput);
+      replyIndex++;
+      panel.scrollTop = panel.scrollHeight;
+    }, 900);
+  }
+
+  document.getElementById('chatInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  // ── INIT ──────────────────────────────────────────────
+  renderTasks();
+
   </script>
 
 </body>
