@@ -8,7 +8,7 @@
     :root {
       --navy:#06111F; --navy2:#0D1B2A; --navy3:#112539;
       --teal:#06B6D4; --gray:#94A3B8; --white:#FFFFFF;
-      --border:rgba(6,182,212,0.15); --indigo:#6366F1;
+      --border:rgba(47, 63, 65, 0.15); --indigo:#6366F1;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     body { background:var(--navy); color:var(--white); font-family:Arial,sans-serif; display:flex; min-height:100vh; }
@@ -132,111 +132,112 @@
   </main>
 
   <script>
-    let currentSubject = 'All subjects';
+  let currentSubject = 'All subjects';
+  let conversationHistory = [];
 
-    const aiReplies = {
-      default: [
-        "Great question. For your Accounting essay, start with the introduction — just 150 words to outline your argument. That's your session goal for tonight.",
-        "Based on what I know about your History quiz, focus on chapters 6 and 7. Those cover the topics most likely to come up. Want me to quiz you?",
-        "You've been studying hard — 7 days straight. Make sure you're taking proper breaks. 25 minutes on, 5 minutes off works best for retention.",
-        "For Research Methods, the key concepts are qualitative vs quantitative design. Want me to explain the difference with examples?",
-        "Your strongest subject right now is IT. Your Accounting essay needs the most attention — that's where I'd spend tonight.",
-      ],
-      'ACC101': [
-        "For your Accounting essay, structure it as: Introduction → Theory → Case Analysis → Conclusion. You need about 500 words per section.",
-        "The key concept for ACC101 is double-entry bookkeeping. Every debit has a credit. Want me to walk through some examples?",
-        "Your essay is due Friday. You have 3 days. Tonight: intro + theory. Tomorrow: case analysis. Thursday: edit and submit. That's your plan.",
-      ],
-      'HIST201': [
-        "For your History quiz, focus on the causes and consequences of the events in chapters 6–7. That's where the exam questions usually come from.",
-        "A good way to revise History is timeline mapping. Want me to help you build a timeline of the key events?",
-        "History tip: don't just memorise dates — understand the *why*. Examiners want analysis, not just facts.",
-      ],
-    };
+  function setSubject(el, subject) {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    currentSubject = subject;
+  }
 
-    let replyIndex = 0;
+  function getTime() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
 
-    function getReply() {
-      const pool = aiReplies[currentSubject] || aiReplies.default;
-      return pool[replyIndex++ % pool.length];
-    }
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
 
-    function setSubject(el, subject) {
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      el.classList.add('active');
-      currentSubject = subject;
-    }
+    const messages = document.getElementById('messages');
 
-    function getTime() {
-      return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    }
+    // Add user message to screen
+    const userMsg = document.createElement('div');
+    userMsg.className = 'msg user';
+    userMsg.innerHTML = `
+      <div class="msg-avatar">C</div>
+      <div>
+        <div class="msg-bubble">${msg}</div>
+        <div class="msg-time">${getTime()}</div>
+      </div>
+    `;
+    messages.appendChild(userMsg);
 
-    function sendMessage() {
-      const input = document.getElementById('chatInput');
-      const msg = input.value.trim();
-      if (!msg) return;
+    // Add to conversation history
+    conversationHistory.push({ role: 'user', content: msg });
 
-      const messages = document.getElementById('messages');
+    input.value = '';
+    input.style.height = '50px';
+    messages.scrollTop = messages.scrollHeight;
 
-      // User message
-      const userMsg = document.createElement('div');
-      userMsg.className = 'msg user';
-      userMsg.innerHTML = `
-        <div class="msg-avatar">C</div>
+    // Show typing indicator
+    const typing = document.createElement('div');
+    typing.className = 'msg ai';
+    typing.id = 'typing';
+    typing.innerHTML = `
+      <div class="msg-avatar">🤖</div>
+      <div class="typing"><span></span><span></span><span></span></div>
+    `;
+    messages.appendChild(typing);
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+      // Call your real AI server
+      const response = await fetch('http://localhost:3001/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: conversationHistory })
+      });
+
+      const data = await response.json();
+      const reply = data.reply;
+
+      // Add to history
+      conversationHistory.push({ role: 'assistant', content: reply });
+
+      // Remove typing and show reply
+      document.getElementById('typing').remove();
+
+      const aiMsg = document.createElement('div');
+      aiMsg.className = 'msg ai';
+      aiMsg.innerHTML = `
+        <div class="msg-avatar">🤖</div>
         <div>
-          <div class="msg-bubble">${msg}</div>
+          <div class="msg-bubble">${reply}</div>
           <div class="msg-time">${getTime()}</div>
         </div>
       `;
-      messages.appendChild(userMsg);
-      input.value = '';
-      input.style.height = '50px';
-
-      // Scroll to bottom
+      messages.appendChild(aiMsg);
       messages.scrollTop = messages.scrollHeight;
 
-      // Typing indicator
-      const typing = document.createElement('div');
-      typing.className = 'msg ai';
-      typing.id = 'typing';
-      typing.innerHTML = `
+    } catch (error) {
+      document.getElementById('typing').remove();
+      const errMsg = document.createElement('div');
+      errMsg.className = 'msg ai';
+      errMsg.innerHTML = `
         <div class="msg-avatar">🤖</div>
-        <div class="typing"><span></span><span></span><span></span></div>
+        <div>
+          <div class="msg-bubble" style="color:var(--red)">Server not running. Start it with: node server.js</div>
+          <div class="msg-time">${getTime()}</div>
+        </div>
       `;
-      messages.appendChild(typing);
-      messages.scrollTop = messages.scrollHeight;
-
-      // AI reply
-      setTimeout(() => {
-        typing.remove();
-        const aiMsg = document.createElement('div');
-        aiMsg.className = 'msg ai';
-        aiMsg.innerHTML = `
-          <div class="msg-avatar">🤖</div>
-          <div>
-            <div class="msg-bubble">${getReply()}</div>
-            <div class="msg-time">${getTime()}</div>
-          </div>
-        `;
-        messages.appendChild(aiMsg);
-        messages.scrollTop = messages.scrollHeight;
-      }, 1200);
+      messages.appendChild(errMsg);
     }
+  }
 
-    // Enter to send
-    document.getElementById('chatInput').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
+  document.getElementById('chatInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
 
-    // Auto-resize textarea
-    document.getElementById('chatInput').addEventListener('input', function() {
-      this.style.height = '50px';
-      this.style.height = Math.min(this.scrollHeight, 140) + 'px';
-    });
-  </script>
+  document.getElementById('chatInput').addEventListener('input', function() {
+    this.style.height = '50px';
+    this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  });
+</script>
 
 </body>
 </html>
