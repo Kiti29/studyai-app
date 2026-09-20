@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyAI — Assignments</title>
+  <style>
+    :root {
+      --navy:#06111F; --navy2:#0D1B2A; --navy3:#112539;
+      --teal:#06B6D4; --gray:#94A3B8; --white:#FFFFFF;
+      --border:rgba(6,182,212,0.15); --amber:#F59E0B;
+      --green:#10B981; --indigo:#6366F1; --red:#EF4444;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--navy); color:var(--white); font-family:Arial,sans-serif; display:flex; min-height:100vh; }
+
+    .sidebar { width:240px; background:var(--navy2); border-right:1px solid var(--border); padding:28px 20px; display:flex; flex-direction:column; gap:8px; position:fixed; top:0; bottom:0; }
+    .logo { font-size:22px; font-weight:800; color:var(--teal); margin-bottom:32px; padding-left:12px; }
+    .nav-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; cursor:pointer; font-size:14px; color:var(--gray); transition:all 0.2s; text-decoration:none; }
+    .nav-item:hover { background:var(--navy3); color:var(--white); }
+    .nav-item.active { background:rgba(6,182,212,0.12); color:var(--teal); }
+    .nav-icon { font-size:18px; width:24px; text-align:center; }
+
+    .main { margin-left:240px; flex:1; padding:36px 40px; }
+    .page-title { font-size:26px; font-weight:700; margin-bottom:6px; }
+    .page-sub { font-size:14px; color:var(--gray); margin-bottom:32px; }
+
+    .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    .btn { background:var(--teal); color:var(--white); border:none; padding:10px 22px; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer; }
+
+    table { width:100%; border-collapse:collapse; }
+    thead th { text-align:left; font-size:12px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--gray); padding:12px 16px; border-bottom:1px solid var(--border); }
+    tbody tr { border-bottom:1px solid rgba(255,255,255,0.04); transition:background 0.15s; }
+    tbody tr:hover { background:var(--navy2); }
+    tbody td { padding:14px 16px; font-size:14px; color:var(--gray); }
+    tbody td:first-child { color:var(--white); font-weight:500; }
+
+    .badge { font-size:11px; font-weight:600; padding:4px 10px; border-radius:50px; }
+    .badge-red { background:rgba(239,68,68,0.12); color:var(--red); }
+    .badge-amber { background:rgba(245,158,11,0.12); color:var(--amber); }
+    .badge-green { background:rgba(16,185,129,0.12); color:var(--green); }
+    .badge-teal { background:rgba(6,182,212,0.12); color:var(--teal); }
+
+    .progress-bar { height:6px; background:var(--navy3); border-radius:50px; overflow:hidden; width:120px; }
+    .progress-fill { height:100%; border-radius:50px; background:linear-gradient(90deg, var(--teal), var(--indigo)); }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="logo">StudyAI</div>
+    <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="assignments.html" class="nav-item active"><span class="nav-icon">📋</span> Assignments</a>
+    <a href="#" class="nav-item"><span class="nav-icon">📅</span> Study Planner</a>
+    <a href="#" class="nav-item"><span class="nav-icon">💬</span> AI Tutor</a>
+    <a href="#" class="nav-icon nav-item"><span class="nav-icon">📈</span> Grades</a>
+    <a href="#" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-title">Assignments</div>
+    <div class="page-sub">All your tasks in one place — sorted by due date.</div>
+
+    <div class="toolbar">
+      <span style="font-size:14px;color:var(--gray)">4 assignments · 3 pending</span>
+      <button class="btn">+ New Assignment</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Assignment</th>
+          <th>Subject</th>
+          <th>Due Date</th>
+          <th>Progress</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Accounting Essay Draft</td>
+          <td>ACC101</td>
+          <td>Friday</td>
+          <td><div class="progress-bar"><div class="progress-fill" style="width:20%"></div></div></td>
+          <td><span class="badge badge-red">Urgent</span></td>
+        </tr>
+        <tr>
+          <td>History Quiz Revision</td>
+          <td>HIST201</td>
+          <td>Thursday</td>
+          <td><div class="progress-bar"><div class="progress-fill" style="width:50%"></div></div></td>
+          <td><span class="badge badge-amber">In Progress</span></td>
+        </tr>
+        <tr>
+          <td>Research Methods Reading</td>
+          <td>RES101</td>
+          <td>Tonight</td>
+          <td><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div></td>
+          <td><span class="badge badge-teal">Not Started</span></td>
+        </tr>
+        <tr>
+          <td>IT Project Proposal</td>
+          <td>ITC204</td>
+          <td>Submitted</td>
+          <td><div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div></td>
+          <td><span class="badge badge-green">Done</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </main>
+
+</body>
+</html>
