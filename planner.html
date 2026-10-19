@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyAI — Study Planner</title>
+  <style>
+    :root {
+      --navy:#06111F; --navy2:#0D1B2A; --navy3:#112539;
+      --teal:#06B6D4; --gray:#94A3B8; --white:#FFFFFF;
+      --border:rgba(6,182,212,0.15); --amber:#F59E0B;
+      --green:#10B981; --indigo:#6366F1; --red:#EF4444;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--navy); color:var(--white); font-family:Arial,sans-serif; display:flex; min-height:100vh; }
+
+    .sidebar { width:240px; background:var(--navy2); border-right:1px solid var(--border); padding:28px 20px; display:flex; flex-direction:column; gap:8px; position:fixed; top:0; bottom:0; }
+    .logo { font-size:22px; font-weight:800; color:var(--teal); margin-bottom:32px; padding-left:12px; }
+    .nav-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; cursor:pointer; font-size:14px; color:var(--gray); transition:all 0.2s; text-decoration:none; }
+    .nav-item:hover { background:var(--navy3); color:var(--white); }
+    .nav-item.active { background:rgba(6,182,212,0.12); color:var(--teal); }
+    .nav-icon { font-size:18px; width:24px; text-align:center; }
+
+    .main { margin-left:240px; flex:1; padding:36px 40px; }
+    .page-title { font-size:26px; font-weight:700; margin-bottom:4px; }
+    .page-sub { font-size:14px; color:var(--gray); margin-bottom:32px; }
+
+    /* TOP ROW */
+    .top-row { display:flex; gap:16px; margin-bottom:28px; }
+    .info-card { background:var(--navy2); border:1px solid var(--border); border-radius:14px; padding:20px 24px; flex:1; }
+    .info-card .label { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--gray); margin-bottom:6px; }
+    .info-card .val { font-size:28px; font-weight:800; }
+
+    /* WEEK GRID */
+    .week-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .week-header h2 { font-size:16px; font-weight:700; }
+    .week-nav { display:flex; gap:8px; align-items:center; }
+    .week-nav button { background:var(--navy2); border:1px solid var(--border); color:var(--white); padding:6px 14px; border-radius:8px; font-size:13px; cursor:pointer; transition:background .2s; }
+    .week-nav button:hover { background:var(--navy3); }
+    .week-label { font-size:13px; color:var(--gray); min-width:140px; text-align:center; }
+
+    .grid { display:grid; grid-template-columns:80px repeat(7,1fr); gap:2px; }
+
+    .grid-head { background:var(--navy2); border-radius:8px 8px 0 0; padding:10px 6px; text-align:center; font-size:12px; font-weight:700; color:var(--gray); }
+    .grid-head.today { color:var(--teal); background:rgba(6,182,212,.08); }
+
+    .time-cell { background:var(--navy2); padding:0 8px; display:flex; align-items:center; font-size:11px; color:var(--gray); height:52px; }
+
+    .slot { background:var(--navy2); border:1px solid rgba(255,255,255,.03); height:52px; cursor:pointer; transition:background .15s; position:relative; overflow:hidden; }
+    .slot:hover { background:var(--navy3); }
+    .slot.filled { cursor:default; }
+    .slot.filled:hover { background:var(--navy2); }
+
+    .session {
+      position:absolute; inset:2px; border-radius:6px;
+      display:flex; flex-direction:column; justify-content:center;
+      padding:0 7px; font-size:11px; font-weight:600; line-height:1.3;
+    }
+    .session.teal  { background:rgba(6,182,212,.18); color:var(--teal); border-left:3px solid var(--teal); }
+    .session.amber { background:rgba(245,158,11,.18); color:var(--amber); border-left:3px solid var(--amber); }
+    .session.indigo{ background:rgba(99,102,241,.18); color:var(--indigo); border-left:3px solid var(--indigo); }
+    .session.green { background:rgba(16,185,129,.18); color:var(--green); border-left:3px solid var(--green); }
+    .session.red   { background:rgba(239,68,68,.18);  color:var(--red);   border-left:3px solid var(--red); }
+
+    /* ADD SESSION MODAL */
+    .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:999; justify-content:center; align-items:center; }
+    .modal.open { display:flex; }
+    .modal-box { background:var(--navy2); border:1px solid rgba(6,182,212,.25); border-radius:20px; padding:36px; width:400px; }
+    .modal-box h2 { font-size:18px; font-weight:700; margin-bottom:6px; }
+    .modal-box p { font-size:13px; color:var(--gray); margin-bottom:22px; }
+    .field { margin-bottom:14px; }
+    .field label { font-size:12px; color:var(--gray); display:block; margin-bottom:5px; }
+    .field input, .field select {
+      width:100%; padding:11px 14px; border-radius:9px;
+      border:1px solid rgba(6,182,212,.2); background:var(--navy);
+      color:var(--white); font-size:14px; outline:none;
+    }
+    .field select option { background:var(--navy2); }
+    .btn-row { display:flex; gap:10px; margin-top:20px; }
+    .btn-add { flex:1; padding:12px; background:var(--teal); color:#fff; border:none; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer; }
+    .btn-cancel { flex:1; padding:12px; background:transparent; color:var(--gray); border:1px solid rgba(255,255,255,.1); border-radius:9px; font-size:14px; cursor:pointer; }
+
+    /* AI SUGGESTION */
+    .ai-tip { background:linear-gradient(135deg,rgba(6,182,212,.07),rgba(99,102,241,.09)); border:1px solid rgba(6,182,212,.2); border-radius:12px; padding:16px 20px; margin-top:24px; font-size:14px; color:var(--gray); line-height:1.65; }
+    .ai-tip .tag { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--teal); margin-bottom:5px; }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="logo">StudyAI</div>
+    <a href="/dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="/assignments.html" class="nav-item"><span class="nav-icon">📋</span> Assignments</a>
+    <a href="/planner.html" class="nav-item active"><span class="nav-icon">📅</span> Study Planner</a>
+    <a href="/tutor.html" class="nav-item"><span class="nav-icon">💬</span> AI Tutor</a>
+    <a href="/grades.html" class="nav-item"><span class="nav-icon">📈</span> Grades</a>
+    <a href="#" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-title">Study Planner</div>
+    <div class="page-sub">Your week, built around your life.</div>
+
+    <div class="top-row">
+      <div class="info-card">
+        <div class="label">Study Hours This Week</div>
+        <div class="val" style="color:var(--teal)" id="totalHours">0h</div>
+      </div>
+      <div class="info-card">
+        <div class="label">Sessions Scheduled</div>
+        <div class="val" style="color:var(--indigo)" id="totalSessions">0</div>
+      </div>
+      <div class="info-card">
+        <div class="label">Busiest Day</div>
+        <div class="val" style="color:var(--amber);font-size:18px" id="busiestDay">—</div>
+      </div>
+      <div class="info-card" style="flex:2">
+        <div class="label">AI Recommendation</div>
+        <div style="font-size:13px;color:var(--gray);margin-top:4px">Your Accounting Essay is due Friday — I've suggested sessions Mon & Wed evening. Click any slot to add your own.</div>
+      </div>
+    </div>
+
+    <div class="week-header">
+      <h2>Weekly Schedule</h2>
+      <div class="week-nav">
+        <button onclick="changeWeek(-1)">← Prev</button>
+        <span class="week-label" id="weekLabel">—</span>
+        <button onclick="changeWeek(1)">Next →</button>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="ai-tip">
+      <div class="tag">⚡ AI Study Coach</div>
+      You have 3 assignments due this week. Best strategy: tackle Accounting Mon + Wed evenings (2h each), History revision Thursday afternoon, and keep Friday light before submission. Sunday is your rest day — don't study.
+    </div>
+  </main>
+
+  <!-- MODAL -->
+  <div class="modal" id="modal">
+    <div class="modal-box">
+      <h2>Add Study Session</h2>
+      <p id="modalSlotLabel">Monday 9:00 AM</p>
+      <div class="field">
+        <label>Subject</label>
+        <select id="sessionSubject">
+          <option value="ACC101">ACC101 — Accounting</option>
+          <option value="HIST201">HIST201 — History</option>
+          <option value="RES101">RES101 — Research Methods</option>
+          <option value="ITC204">ITC204 — IT Project</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Duration</label>
+        <select id="sessionDuration">
+          <option value="1">1 hour</option>
+          <option value="1.5">1.5 hours</option>
+          <option value="2" selected>2 hours</option>
+          <option value="3">3 hours</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Note (optional)</label>
+        <input type="text" id="sessionNote" placeholder="e.g. Essay intro draft">
+      </div>
+      <div class="btn-row">
+        <button class="btn-add" onclick="addSession()">Add Session</button>
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const HOURS = ['8 AM','9 AM','10 AM','11 AM','12 PM','1 PM','2 PM','3 PM','4 PM','5 PM','6 PM','7 PM','8 PM','9 PM'];
+    const COLORS = { ACC101:'teal', HIST201:'amber', RES101:'indigo', ITC204:'green', Other:'red' };
+
+    let weekOffset = 0;
+    let sessions = JSON.parse(localStorage.getItem('plannerSessions') || '{}');
+    let pendingSlot = null;
+
+    // Pre-populate with AI suggestions if empty
+    if (Object.keys(sessions).length === 0) {
+      sessions = {
+        '0-10': { subject:'ACC101', duration:2, note:'Essay intro draft' },
+        '2-10': { subject:'ACC101', duration:2, note:'Essay body' },
+        '3-8':  { subject:'HIST201', duration:1.5, note:'Chapters 6-7 revision' },
+        '1-9':  { subject:'RES101', duration:1, note:'Week 8 reading' },
+      };
+      localStorage.setItem('plannerSessions', JSON.stringify(sessions));
+    }
+
+    function getWeekLabel() {
+      const now = new Date();
+      now.setDate(now.getDate() + weekOffset * 7);
+      const mon = new Date(now);
+      mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+      const fmt = d => d.toLocaleDateString('en-AU', { day:'numeric', month:'short' });
+      return fmt(mon) + ' – ' + fmt(sun);
+    }
+
+    function buildGrid() {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+
+      // Header row
+      grid.appendChild(Object.assign(document.createElement('div'), { className:'grid-head', textContent:'' }));
+      DAYS.forEach((d,i) => {
+        const el = document.createElement('div');
+        el.className = 'grid-head' + (i === new Date().getDay() - 1 ? ' today' : '');
+        el.textContent = d;
+        grid.appendChild(el);
+      });
+
+      // Time rows
+      HOURS.forEach((h, hi) => {
+        const timeEl = document.createElement('div');
+        timeEl.className = 'time-cell';
+        timeEl.textContent = h;
+        grid.appendChild(timeEl);
+
+        DAYS.forEach((d, di) => {
+          const key = `${di}-${hi}`;
+          const slot = document.createElement('div');
+          slot.className = 'slot';
+
+          if (sessions[key]) {
+            slot.classList.add('filled');
+            const s = sessions[key];
+            const sess = document.createElement('div');
+            sess.className = `session ${COLORS[s.subject] || 'teal'}`;
+            sess.innerHTML = `<span>${s.subject}</span>${s.note ? `<span style="font-weight:400;opacity:.8">${s.note}</span>` : ''}`;
+            slot.appendChild(sess);
+
+            // Right click or long press to remove
+            slot.addEventListener('contextmenu', e => {
+              e.preventDefault();
+              if (confirm(`Remove ${s.subject} session?`)) {
+                delete sessions[key];
+                localStorage.setItem('plannerSessions', JSON.stringify(sessions));
+                buildGrid(); updateStats();
+              }
+            });
+          } else {
+            slot.addEventListener('click', () => openModal(di, hi, d, h));
+          }
+          grid.appendChild(slot);
+        });
+      });
+
+      document.getElementById('weekLabel').textContent = getWeekLabel();
+      updateStats();
+    }
+
+    function updateStats() {
+      const count = Object.keys(sessions).length;
+      const hours = Object.values(sessions).reduce((sum, s) => sum + parseFloat(s.duration), 0);
+      document.getElementById('totalSessions').textContent = count;
+      document.getElementById('totalHours').textContent = hours + 'h';
+
+      // Busiest day
+      const dayCounts = Array(7).fill(0);
+      Object.keys(sessions).forEach(k => { dayCounts[parseInt(k.split('-')[0])]++; });
+      const max = Math.max(...dayCounts);
+      const busiest = max > 0 ? DAYS[dayCounts.indexOf(max)] : '—';
+      document.getElementById('busiestDay').textContent = busiest;
+    }
+
+    function openModal(di, hi, day, hour) {
+      pendingSlot = { di, hi };
+      document.getElementById('modalSlotLabel').textContent = `${DAYS[di]} at ${HOURS[hi]}`;
+      document.getElementById('sessionNote').value = '';
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
+      pendingSlot = null;
+    }
+
+    function addSession() {
+      if (!pendingSlot) return;
+      const key = `${pendingSlot.di}-${pendingSlot.hi}`;
+      sessions[key] = {
+        subject: document.getElementById('sessionSubject').value,
+        duration: parseFloat(document.getElementById('sessionDuration').value),
+        note: document.getElementById('sessionNote').value,
+      };
+      localStorage.setItem('plannerSessions', JSON.stringify(sessions));
+      closeModal();
+      buildGrid();
+    }
+
+    function changeWeek(dir) {
+      weekOffset += dir;
+      document.getElementById('weekLabel').textContent = getWeekLabel();
+    }
+
+    buildGrid();
+  </script>
+</body>
+</html>
