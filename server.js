@@ -14,7 +14,8 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
 app.get('/assignments', (req, res) => res.sendFile(path.join(__dirname, 'assignments.html')));
 app.get('/tutor', (req, res) => res.sendFile(path.join(__dirname, 'tutor.html')));
-
+app.get('/planner.html', (req, res) => res.sendFile(path.join(__dirname, 'planner.html')));
+app.get('/grades.html', (req, res) => res.sendFile(path.join(__dirname, 'grades.html')));
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 app.post('/chat', async (req, res) => {
@@ -39,4 +40,7 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-app.listen(3001, () => console.log('StudyAI server running on http://localhost:3001'));
+if (require.main === module) {
+  app.listen(3001, () => console.log('StudyAI server running on http://localhost:3001'));
+}
+module.exports = app;
