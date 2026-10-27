@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyAI — Log in</title>
+  <style>
+    :root { --navy:#06111F; --navy2:#0D1B2A; --teal:#06B6D4; --gray:#94A3B8; --border:rgba(6,182,212,0.2); }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--navy); color:#fff; font-family:Arial,sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+    .box { background:var(--navy2); border:1px solid var(--border); border-radius:20px; padding:40px; width:400px; max-width:92vw; }
+    .logo { font-size:26px; font-weight:800; color:var(--teal); margin-bottom:6px; }
+    .sub { font-size:14px; color:var(--gray); margin-bottom:26px; }
+    label { font-size:12px; color:var(--gray); display:block; margin-bottom:5px; }
+    input { width:100%; padding:13px 14px; border-radius:10px; border:1px solid var(--border); background:var(--navy); color:#fff; font-size:14px; margin-bottom:14px; outline:none; }
+    input:focus { border-color:var(--teal); }
+    button { width:100%; padding:14px; background:var(--teal); color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; margin-top:4px; }
+    .switch { text-align:center; margin-top:18px; font-size:13px; color:var(--gray); }
+    .switch a { color:var(--teal); cursor:pointer; }
+    #msg { font-size:13px; margin-bottom:12px; color:#EF4444; min-height:16px; }
+    #msg.ok { color:#10B981; }
+    #nameField { display:none; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo">StudyAI</div>
+    <div class="sub" id="subtitle">Log in to your account</div>
+
+    <form onsubmit="event.preventDefault(); handleAuth();">
+      <div id="nameField">
+        <label>First name</label>
+        <input id="name" type="text" placeholder="e.g. Cain">
+      </div>
+      <label>Email</label>
+      <input id="email" type="email" placeholder="you@uni.edu.au" required>
+      <label>Password</label>
+      <input id="password" type="password" placeholder="At least 6 characters" required minlength="6">
+      <div id="msg"></div>
+      <button type="submit" id="btn">Log in</button>
+    </form>
+
+    <div class="switch" id="switch">No account? <a onclick="setMode('signup')">Sign up</a></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/shared.js"></script>
+  <script>
+    let mode = 'login';
+
+    function setMsg(text, ok) {
+      const el = document.getElementById('msg');
+      el.textContent = text;
+      el.className = ok ? 'ok' : '';
+    }
+
+    function setMode(m) {
+      mode = m;
+      const signup = m === 'signup';
+      document.getElementById('nameField').style.display = signup ? 'block' : 'none';
+      document.getElementById('subtitle').textContent = signup ? 'Create your account' : 'Log in to your account';
+      document.getElementById('btn').textContent = signup ? 'Create account' : 'Log in';
+      document.getElementById('switch').innerHTML = signup
+        ? 'Already have an account? <a onclick="setMode(\'login\')">Log in</a>'
+        : 'No account? <a onclick="setMode(\'signup\')">Sign up</a>';
+      setMsg('');
+    }
+
+    async function handleAuth() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const name = document.getElementById('name').value.trim() || email.split('@')[0];
+      setMsg('');
+      DB.clearLocal(); // never leak a previous user's cached data
+
+      let res;
+      if (mode === 'signup') {
+        res = await sb.auth.signUp({ email, password, options: { data: { name } } });
+        if (res.error) return setMsg(res.error.message);
+        if (!res.data.session) return setMsg('Check your email to confirm your account, then log in.', true);
+      } else {
+        res = await sb.auth.signInWithPassword({ email, password });
+        if (res.error) return setMsg(res.error.message);
+      }
+      location.href = '/dashboard.html';
+    }
+  </script>
+</body>
+</html>
